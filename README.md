@@ -1,5 +1,7 @@
  
 
+Shifter is a rpg game that has intense movement, and meelee attacks
+-# All code is subject to change
 
 > Open this page at [https://cgroffcialcode.github.io/shifter/](https://cgroffcialcode.github.io/shifter/)
 
