@@ -453,7 +453,8 @@ forever(function () {
     }
 })
 forever(function () {
-	
+    pause(5000)
+    SpawnEnemy()
 })
 game.onUpdateInterval(500, function () {
     if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingLeft))) {
