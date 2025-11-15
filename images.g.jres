@@ -39,6 +39,11 @@
         "mimeType": "image/x-mkcd-f4",
         "displayName": "block"
     },
+    "image8": {
+        "data": "hwQQABAAAAAAAAAAAAAAAAAAIiIiIgAAACAAAAAAAgAAAgAAAAAgACAAAAAAAAACIAAAAAAAAAIgAAAAAAAAAiAAAAAAAAACIAAAAAAAAAIgAAAAAAAAAiAAAAAAAAACAAIAAAAAIAAAIAAAAAACAAAAIiIiIgAAAAAAAAAAAAAAAAAAAAAAAA==",
+        "mimeType": "image/x-mkcd-f4",
+        "displayName": "Player radius"
+    },
     "anim4": {
         "namespace": "myAnimations",
         "id": "anim4",

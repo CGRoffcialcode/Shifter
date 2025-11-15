@@ -1,7 +1,6 @@
 {
     "name": "shifterOriginal",
     "description": "",
-    "disableTargetTemplateFiles": true ,
     "dependencies": {
         "device": "*",
         "pxt-status-bar": "github:jwunderl/pxt-status-bar#v0.4.2",
@@ -31,5 +30,6 @@
     "supportedTargets": [
         "arcade"
     ],
-    "preferredEditor": "blocksprj"
+    "preferredEditor": "blocksprj",
+    "disableTargetTemplateFiles": true
 }

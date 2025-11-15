@@ -1,9 +1,14 @@
+// TODO: 
+
 namespace SpriteKind {
     export const enemyHitbox = SpriteKind.create()
+    export const playerhitbox = SpriteKind.create()
+    export const playerRadius = SpriteKind.create()
 }
 namespace StatusBarKind {
     export const Stamina = StatusBarKind.create()
 }
+
 // (You can remove the border color flip now, as the fill color flip is stronger)
 function decreaseEnemyHealth (decreaseAmount: number, enemySprite: Sprite) {
     bar = statusbars.getStatusBarAttachedTo(StatusBarKind.EnemyHealth, enemySprite)
@@ -20,6 +25,7 @@ function SpawnEnemy () {
 }
 function DashY (ButtonPressed: boolean, Direction: number) {
     if (!(dashing) && ButtonPressed) {
+        playerDamageable = false
         dashing = true
         prevSpeed = PlayerSprite.vy
         controller.moveSprite(PlayerSprite, 0, 0)
@@ -39,6 +45,7 @@ function DashY (ButtonPressed: boolean, Direction: number) {
             stamina_status_bar.value += -50
             dashing = false
         })
+        playerDamageable = true
     }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
@@ -51,6 +58,8 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
         attack(isFacingRight)
     }
 })
+// Called automatically by the timer after an invincibility duration is complete.
+
 function attemptSprint () {
     controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
     stamina_status_bar.value += -10
@@ -58,35 +67,32 @@ function attemptSprint () {
     Player_VX_X = 150
     player_Vx_Y = 150
     isSprinting = true
+    playerDamageable = true
 }
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = false
 })
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
-    decreaseEnemyHealth(-10, sprite)
-    if (isFacingRight && PlayerAttacking) {
-        sprite.setVelocity(1000, 0)
-        pause(500)
-        sprite.vx = 0
-    } else if (PlayerAttacking) {
-        sprite.setVelocity(-1000, 0)
+    if (isFacingRight) {
+        sprite.setVelocity(5000, 0)
         pause(200)
         sprite.vx = 0
-    } else if (isFacingRight) {
-        sprite.setVelocity(500, 0)
-        pause(100)
-        sprite.vx = 0
     } else {
-        sprite.setVelocity(-500, 0)
-        pause(100)
+        sprite.setVelocity(-5000, 0)
+        pause(200)
         sprite.vx = 0
     }
+})
+sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerRadius, function (sprite, otherSprite) {
+    enemyattack(enemyDirectionFacingRIght, sprite)
+    
 })
 statusbars.onZero(StatusBarKind.EnemyHealth, function (status) {
     sprites.destroy(status.spriteAttachedTo(), effects.halo, 1000)
 })
 function attack (isfacingright: boolean) {
     if (isAllowedToAttack) {
+        
         // Set PlayerAttacking flag to true
         PlayerAttacking = true
         // Stop all other animations
@@ -111,9 +117,6 @@ function attack (isfacingright: boolean) {
             }
             projectile.setPosition(PlayerSprite.x, PlayerSprite.y)
             projectile.x = PlayerSprite.x + 10
-            if (projectile) {
-                console.log("true idk")
-            }
         } else {
             // 200 ms per frame
             // Do not loop
@@ -131,6 +134,7 @@ function attack (isfacingright: boolean) {
             }
             projectile.setPosition(PlayerSprite.x, PlayerSprite.y)
         }
+        projectile.setKind(SpriteKind.playerhitbox)
         // After the attack animation finishes, set PlayerAttacking to false
         PlayerAttacking = false
         pause(500)
@@ -138,16 +142,36 @@ function attack (isfacingright: boolean) {
         // Optionally, you can re-enable character animations if needed
         characterAnimations.setCharacterAnimationsEnabled(PlayerSprite, true)
         isAllowedToAttack = false
+        playerDamageable = false
     }
     timer.after(1000, function () {
         isAllowedToAttack = true
     })
 }
+statusbars.onZero(StatusBarKind.Health, function (status) {
+    sprites.destroy(status.spriteAttachedTo(), effects.warmRadial, 1000)
+    sprites.destroy(PlayerRadius)
+})
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = true
 })
+
+function decreasePlayerHealth (decreaseAmount: number) {
+    
+    Health_Bar.value += decreaseAmount
+    Health_Bar.setColor(7, 15)
+    
+    
+}
+sprites.onOverlap(SpriteKind.Player, SpriteKind.enemyHitbox, function (sprite, otherSprite) {
+    decreasePlayerHealth(-10)
+    pause(100)
+    sprites.destroy(otherSprite)
+    pause(1000)
+})
 function Dash (ButtonPressed2: boolean, Direction2: number) {
     if (!(dashing) && ButtonPressed2) {
+        
         dashing = true
         prevSpeed = PlayerSprite.vx
         controller.moveSprite(PlayerSprite, 0, 0)
@@ -171,59 +195,77 @@ function Dash (ButtonPressed2: boolean, Direction2: number) {
             stamina_status_bar.value += -50
             dashing = false
         })
+        playerDamageable = true
     }
 }
+function createPlayerRadius () {
+    PlayerRadius = sprites.create(assets.image`Player radius`, SpriteKind.playerRadius)
+    PlayerRadius.setPosition(PlayerSprite.x, PlayerSprite.y)
+    if (!(hitboxesVisible)) {
+        PlayerRadius.setFlag(SpriteFlag.Invisible, true)
+    } else {
+        PlayerRadius.setFlag(SpriteFlag.Invisible, false)
+    }
+    PlayerRadius.scale = 1
+}
 function enemyattack (isfacingright2: boolean, enemy_sprite: Sprite) {
+    enemy_sprite.follow(PlayerSprite, 0)
     if (IsAllowedEnemytoAttack) {
-        // Set PlayerAttacking flag to true
+        let hitbox: Sprite;
         EnemyAttacking = true
-        // Stop all other animations
         animation.stopAnimation(animation.AnimationTypes.All, enemy_sprite)
-        // Disable character animations temporarily
         characterAnimations.setCharacterAnimationsEnabled(enemy_sprite, false)
-        // Check if the player is facing right or left, and run the corresponding attack animation
+        // --- 2. HITBOX CREATION & POSITIONING ---
         if (isfacingright2) {
-            // 100 ms per frame
-            // Do not loop
             animation.runImageAnimation(
             enemy_sprite,
             assets.animation`enemy_attack_right`,
             200,
             false
             )
-            if (hitboxesVisible) {
-                enemyHitbox2 = sprites.create(assets.image`block`, SpriteKind.enemyHitbox)
-            } else {
-                enemyHitbox2 = sprites.create(assets.image`block`, SpriteKind.enemyHitbox)
-                enemyHitbox2.setFlag(SpriteFlag.Invisible, true)
+            // FIX: Create as a projectile (even with 0 speed) for reliable lifespan functionality
+            hitbox = sprites.createProjectileFromSprite(assets.image`block`, enemy_sprite, 0, 0)
+            // Must set the Kind afterward
+            hitbox.setKind(SpriteKind.enemyHitbox)
+            if (!(hitboxesVisible)) {
+                hitbox.setFlag(SpriteFlag.Invisible, true)
             }
-            projectile.setPosition(PlayerSprite.x, PlayerSprite.y)
-            projectile.x = PlayerSprite.x + 10
+            hitbox.setPosition(enemy_sprite.x, enemy_sprite.y)
+            hitbox.x = enemy_sprite.x + 10
+            enemy_sprite.x = enemy_sprite.x - 2
         } else {
-            // 200 ms per frame
-            // Do not loop
             animation.runImageAnimation(
             enemy_sprite,
             assets.animation`enemy_attack_left`,
             200,
             false
             )
-            if (hitboxesVisible) {
-                enemyHitbox2 = sprites.create(assets.image`block`, SpriteKind.Projectile)
-            } else {
-                enemyHitbox2 = sprites.create(assets.image`block`, SpriteKind.Projectile)
-                enemyHitbox2.setFlag(SpriteFlag.Invisible, true)
+            // FIX: Create as a projectile (even with 0 speed) for reliable lifespan functionality
+            hitbox = sprites.createProjectileFromSprite(assets.image`block`, enemy_sprite, 0, 0)
+            // Must set the Kind afterward
+            hitbox.setKind(SpriteKind.enemyHitbox)
+            if (!(hitboxesVisible)) {
+                hitbox.setFlag(SpriteFlag.Invisible, true)
             }
-            enemyHitbox2.setPosition(enemy_sprite.x, enemy_sprite.y)
+            hitbox.setPosition(enemy_sprite.x, enemy_sprite.y)
+            hitbox.x = enemy_sprite.x - 10
+            enemy_sprite.x = enemy_sprite.x + 2
         }
-        // After the attack animation finishes, set PlayerAttacking to false
+        // --- 3. LIFESPAN (CLEANUP) ---
+        // FIX: Set a lifespan to automatically destroy the unique 'hitbox' after the attack duration
+        // (400ms is a safe value for the 2-frame animation at 200ms per frame, 500ms allows for some delay)
+        hitbox.lifespan = 500
+        // --- 4. COOLDOWN SETUP ---
+        // These flags should be set when the attack *finishes*, not when it starts.
+        // It's recommended to move these inside a timer.after call based on animation duration.
+        // I have left them here as they were in your original code, but note this may cause issues:
         EnemyAttacking = false
-        pause(500)
-        sprites.destroy(enemyHitbox2)
-        // Optionally, you can re-enable character animations if needed
         characterAnimations.setCharacterAnimationsEnabled(enemy_sprite, true)
         IsAllowedEnemytoAttack = false
     }
+    pause(1000)
+    // --- 5. POST-ATTACK FOLLOW & COOLDOWN TIMER ---
+    enemy_sprite.follow(PlayerSprite, 20)
     timer.after(1000, function () {
         IsAllowedEnemytoAttack = true
     })
@@ -235,6 +277,8 @@ function init_Variables () {
     isFacingRight = false
     hitboxesVisible = true
     IsAllowedEnemytoAttack = true
+    // Tracks how many sources (dash, attack, hit) require invincibility.
+    invincibilitySources = 0
 }
 function createEnemyStatusBar (Sprite2: Sprite) {
     _EnemyHealth = statusbars.create(20, 4, StatusBarKind.EnemyHealth)
@@ -387,16 +431,27 @@ function SetUp (isgamereset: boolean) {
     player_Vx_Y = 1
     controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
 }
-let Health_Bar: StatusBarSprite = null
+sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerhitbox, function (sprite, otherSprite) {
+    IsAllowedEnemytoAttack = false
+    decreaseEnemyHealth(-10, sprite)
+    if (isFacingRight) {
+        sprite.setVelocity(500, 0)
+    } else {
+        sprite.setVelocity(-500, 0)
+        pause(100)
+        sprite.vx = 0
+    }
+})
 let _EnemyHealth: StatusBarSprite = null
-let enemyDirectionFacingRIght = false
-let enemyHitbox2: Sprite = null
 let EnemyAttacking = false
 let IsAllowedEnemytoAttack = false
 let directionX = 0
+let Health_Bar: StatusBarSprite = null
+let PlayerRadius: Sprite = null
 let hitboxesVisible = false
-let isAllowedToAttack = false
 let PlayerAttacking = false
+let isAllowedToAttack = false
+let enemyDirectionFacingRIght = false
 let isSprinting = false
 let animation_speed = 0
 let player_Vx_Y = 0
@@ -406,12 +461,19 @@ let stamina_status_bar: StatusBarSprite = null
 let projectile: Sprite = null
 let directionY = 0
 let prevSpeed = 0
+let playerDamageable = false
 let dashing = false
-let PlayerSprite: Sprite = null
 let EnemySprite: Sprite = null
 let bar: StatusBarSprite = null
+let PlayerSprite: Sprite = null
+let invincibilitySources = 0
+let enemyHitbox2 = null
 init_Variables()
 SetUp(false)
+createPlayerRadius()
+game.onUpdateInterval(5000, function () {
+    console.log(playerDamageable)
+})
 forever(function () {
     characterAnimations.loopFrames(
     PlayerSprite,
@@ -458,15 +520,15 @@ forever(function () {
     pause(5000)
     SpawnEnemy()
 })
+forever(function () {
+    PlayerRadius.setPosition(PlayerSprite.x, PlayerSprite.y)
+})
 game.onUpdateInterval(500, function () {
     if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingLeft))) {
         enemyDirectionFacingRIght = false
-        console.log(enemyDirectionFacingRIght)
     } else if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingRight))) {
         enemyDirectionFacingRIght = true
-        console.log(enemyDirectionFacingRIght)
     }
-    console.log(enemyDirectionFacingRIght)
 })
 game.onUpdateInterval(500, function () {
     if (stamina_status_bar.value < 100 && !(controller.B.isPressed())) {
