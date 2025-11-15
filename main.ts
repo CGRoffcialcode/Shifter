@@ -1,5 +1,3 @@
-// TODO: 
-
 namespace SpriteKind {
     export const enemyHitbox = SpriteKind.create()
     export const playerhitbox = SpriteKind.create()
@@ -8,7 +6,6 @@ namespace SpriteKind {
 namespace StatusBarKind {
     export const Stamina = StatusBarKind.create()
 }
-
 // (You can remove the border color flip now, as the fill color flip is stronger)
 function decreaseEnemyHealth (decreaseAmount: number, enemySprite: Sprite) {
     bar = statusbars.getStatusBarAttachedTo(StatusBarKind.EnemyHealth, enemySprite)
@@ -59,7 +56,6 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     }
 })
 // Called automatically by the timer after an invincibility duration is complete.
-
 function attemptSprint () {
     controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
     stamina_status_bar.value += -10
@@ -85,14 +81,12 @@ sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, oth
 })
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerRadius, function (sprite, otherSprite) {
     enemyattack(enemyDirectionFacingRIght, sprite)
-    
 })
 statusbars.onZero(StatusBarKind.EnemyHealth, function (status) {
     sprites.destroy(status.spriteAttachedTo(), effects.halo, 1000)
 })
 function attack (isfacingright: boolean) {
     if (isAllowedToAttack) {
-        
         // Set PlayerAttacking flag to true
         PlayerAttacking = true
         // Stop all other animations
@@ -155,13 +149,9 @@ statusbars.onZero(StatusBarKind.Health, function (status) {
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = true
 })
-
 function decreasePlayerHealth (decreaseAmount: number) {
-    
     Health_Bar.value += decreaseAmount
     Health_Bar.setColor(7, 15)
-    
-    
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.enemyHitbox, function (sprite, otherSprite) {
     decreasePlayerHealth(-10)
@@ -171,7 +161,6 @@ sprites.onOverlap(SpriteKind.Player, SpriteKind.enemyHitbox, function (sprite, o
 })
 function Dash (ButtonPressed2: boolean, Direction2: number) {
     if (!(dashing) && ButtonPressed2) {
-        
         dashing = true
         prevSpeed = PlayerSprite.vx
         controller.moveSprite(PlayerSprite, 0, 0)
@@ -212,7 +201,7 @@ function enemyattack (isfacingright2: boolean, enemy_sprite: Sprite) {
     enemy_sprite.follow(PlayerSprite, 0)
     if (IsAllowedEnemytoAttack) {
         let hitbox: Sprite;
-        EnemyAttacking = true
+EnemyAttacking = true
         animation.stopAnimation(animation.AnimationTypes.All, enemy_sprite)
         characterAnimations.setCharacterAnimationsEnabled(enemy_sprite, false)
         // --- 2. HITBOX CREATION & POSITIONING ---
@@ -443,6 +432,7 @@ sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerhitbox, function (sprite, o
     }
 })
 let _EnemyHealth: StatusBarSprite = null
+let invincibilitySources = 0
 let EnemyAttacking = false
 let IsAllowedEnemytoAttack = false
 let directionX = 0
@@ -463,11 +453,9 @@ let directionY = 0
 let prevSpeed = 0
 let playerDamageable = false
 let dashing = false
+let PlayerSprite: Sprite = null
 let EnemySprite: Sprite = null
 let bar: StatusBarSprite = null
-let PlayerSprite: Sprite = null
-let invincibilitySources = 0
-let enemyHitbox2 = null
 init_Variables()
 SetUp(false)
 createPlayerRadius()
