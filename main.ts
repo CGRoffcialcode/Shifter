@@ -1,3 +1,4 @@
+// TODO: Fix settings where sound and hitbox are rendered the same. Add levels, and exit ablity
 namespace SpriteKind {
     export const enemyHitbox = SpriteKind.create()
     export const playerhitbox = SpriteKind.create()
@@ -46,13 +47,17 @@ function DashY (ButtonPressed: boolean, Direction: number) {
     }
 }
 controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
-    if (characterAnimations.matchesRule(PlayerSprite, characterAnimations.rule(Predicate.Moving))) {
-        Dash(controller.left.isPressed(), -1)
-        Dash(controller.right.isPressed(), 1)
-        DashY(controller.up.isPressed(), -1)
-        DashY(controller.down.isPressed(), 1)
+    if (!(isInMenu)) {
+        if (characterAnimations.matchesRule(PlayerSprite, characterAnimations.rule(Predicate.Moving))) {
+            Dash(controller.left.isPressed(), -1)
+            Dash(controller.right.isPressed(), 1)
+            DashY(controller.up.isPressed(), -1)
+            DashY(controller.down.isPressed(), 1)
+        } else {
+            attack(isFacingRight)
+        }
     } else {
-        attack(isFacingRight)
+    	
     }
 })
 // Called automatically by the timer after an invincibility duration is complete.
@@ -68,15 +73,51 @@ function attemptSprint () {
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = false
 })
+function createSettingsMenu (SettingsImage: Image) {
+    Menu.close()
+    Settings_Menu = miniMenu.createMenu(
+    miniMenu.createMenuItem("Hitboxes Visible", SettingsImage),
+    miniMenu.createMenuItem("Sound", SettingsImage)
+    )
+    Settings_Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Width, 100)
+    Settings_Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Height, 50)
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Border, miniMenu.createBorderBox(
+    4,
+    0,
+    0,
+    0
+    ))
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Margin, miniMenu.createBorderBox(
+    0,
+    0,
+    0,
+    2
+    ))
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.Default, miniMenu.StyleProperty.BorderColor, 5)
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, 2)
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Background, 4)
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.Default, miniMenu.StyleProperty.Foreground, 5)
+    Settings_Menu.setStyleProperty(miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Foreground, 2)
+    Settings_Menu.top = 10
+    Settings_Menu.left = 1
+    Settings_Menu.onButtonPressed(controller.left, function (selection, selectedIndex) {
+        Settings_Menu.close()
+        initMenu()
+    })
+}
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
-    if (isFacingRight) {
-        sprite.setVelocity(5000, 0)
-        pause(200)
-        sprite.vx = 0
+    if (!(isInMenu)) {
+        if (isFacingRight) {
+            sprite.setVelocity(5000, 0)
+            pause(200)
+            sprite.vx = 0
+        } else {
+            sprite.setVelocity(-5000, 0)
+            pause(200)
+            sprite.vx = 0
+        }
     } else {
-        sprite.setVelocity(-5000, 0)
-        pause(200)
-        sprite.vx = 0
+    	
     }
 })
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerRadius, function (sprite, otherSprite) {
@@ -155,6 +196,15 @@ function decreasePlayerHealth (decreaseAmount: number) {
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.enemyHitbox, function (sprite, otherSprite) {
     decreasePlayerHealth(-10)
+    if (enemyDirectionFacingRIght) {
+        sprite.setVelocity(200, 0)
+        pause(200)
+        sprite.vx = 0
+    } else {
+        sprite.setVelocity(-200, 0)
+        pause(200)
+        sprite.vx = 0
+    }
     pause(100)
     sprites.destroy(otherSprite)
     pause(1000)
@@ -196,6 +246,76 @@ function createPlayerRadius () {
         PlayerRadius.setFlag(SpriteFlag.Invisible, false)
     }
     PlayerRadius.scale = 1
+}
+function initMenu () {
+    Menu = miniMenu.createMenu(
+    miniMenu.createMenuItem("Play from last level"),
+    miniMenu.createMenuItem("Levels"),
+    miniMenu.createMenuItem("Character"),
+    miniMenu.createMenuItem("Save"),
+    miniMenu.createMenuItem("Settings"),
+    miniMenu.createMenuItem("Exit")
+    )
+    Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Width, 120)
+    Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Height, 130)
+    Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Border, miniMenu.createBorderBox(
+    4,
+    0,
+    0,
+    0
+    ))
+    Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Margin, miniMenu.createBorderBox(
+    0,
+    0,
+    0,
+    2
+    ))
+    Menu.setStyleProperty(miniMenu.StyleKind.Default, miniMenu.StyleProperty.BorderColor, 5)
+    Menu.setStyleProperty(miniMenu.StyleKind.Selected, miniMenu.StyleProperty.BorderColor, 2)
+    Menu.setStyleProperty(miniMenu.StyleKind.DefaultAndSelected, miniMenu.StyleProperty.Background, 4)
+    Menu.setStyleProperty(miniMenu.StyleKind.Default, miniMenu.StyleProperty.Foreground, 5)
+    Menu.setStyleProperty(miniMenu.StyleKind.Selected, miniMenu.StyleProperty.Foreground, 2)
+    Menu.top = 10
+    Menu.left = 1
+    Menu.onButtonPressed(controller.A, function (selection, selectedIndex) {
+        if (selectedIndex == 4) {
+            createSettingsMenu(assets.image`Tick`)
+            Settings_Menu.onButtonPressed(controller.A, function (selection, selectedIndex) {
+                if (selectedIndex == 0) {
+                    Settings_Menu.close()
+                    if (hitboxesVisible) {
+                        hitboxesVisible = false
+                        createSettingsMenu(assets.image`Cross`)
+                    } else if (!(hitboxesVisible)) {
+                        hitboxesVisible = true
+                        createSettingsMenu(assets.image`Tick`)
+                    }
+                }
+                if (selectedIndex == 1) {
+                    Settings_Menu.close()
+                    if (musicAllowed) {
+                        musicAllowed = false
+                        createSettingsMenu(assets.image`Cross`)
+                    } else if (!(hitboxesVisible)) {
+                        musicAllowed = true
+                        createSettingsMenu(assets.image`Tick`)
+                    }
+                }
+            })
+        }
+        if (selectedIndex == 0) {
+            Menu.close()
+            // ✅ CRITICAL FIX: Add the setup functions here!
+            SetUp(false)
+            createPlayerRadius()
+            // You might want to stop menu music here too
+            music.stopAllSounds()
+            // Sets isInMenu to true, then the next line makes it false
+            init_Variables()
+            // Game is now active
+            isInMenu = false
+        }
+    })
 }
 function enemyattack (isfacingright2: boolean, enemy_sprite: Sprite) {
     enemy_sprite.follow(PlayerSprite, 0)
@@ -260,11 +380,11 @@ EnemyAttacking = true
     })
 }
 function init_Variables () {
+    isInMenu = true
     PlayerAttacking = false
     animation_speed = 100
     enemyDirectionFacingRIght = false
     isFacingRight = false
-    hitboxesVisible = true
     IsAllowedEnemytoAttack = true
     // Tracks how many sources (dash, attack, hit) require invincibility.
     invincibilitySources = 0
@@ -425,6 +545,8 @@ sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerhitbox, function (sprite, o
     decreaseEnemyHealth(-10, sprite)
     if (isFacingRight) {
         sprite.setVelocity(500, 0)
+        pause(100)
+        sprite.vx = 0
     } else {
         sprite.setVelocity(-500, 0)
         pause(100)
@@ -438,10 +560,11 @@ let IsAllowedEnemytoAttack = false
 let directionX = 0
 let Health_Bar: StatusBarSprite = null
 let PlayerRadius: Sprite = null
-let hitboxesVisible = false
 let PlayerAttacking = false
 let isAllowedToAttack = false
 let enemyDirectionFacingRIght = false
+let Settings_Menu: miniMenu.MenuSprite = null
+let Menu: miniMenu.MenuSprite = null
 let isSprinting = false
 let animation_speed = 0
 let player_Vx_Y = 0
@@ -456,79 +579,112 @@ let dashing = false
 let PlayerSprite: Sprite = null
 let EnemySprite: Sprite = null
 let bar: StatusBarSprite = null
+let isInMenu = false
+let musicAllowed = false
+let hitboxesVisible = false
+hitboxesVisible = true
+musicAllowed = true
 init_Variables()
-SetUp(false)
-createPlayerRadius()
+if (isInMenu) {
+    if (musicAllowed) {
+        music.play(music.createSong(assets.song`MenuSong`), music.PlaybackMode.LoopingInBackground)
+    }
+    initMenu()
+} else {
+    SetUp(false)
+    createPlayerRadius()
+    music.stopAllSounds()
+}
 game.onUpdateInterval(5000, function () {
-    console.log(playerDamageable)
+    console.log(hitboxesVisible)
 })
 forever(function () {
-    characterAnimations.loopFrames(
-    PlayerSprite,
-    assets.animation`Hero_walking_left`,
-    animation_speed,
-    characterAnimations.rule(Predicate.MovingLeft)
-    )
-    characterAnimations.loopFrames(
-    PlayerSprite,
-    assets.animation`Hero_walking_right`,
-    animation_speed,
-    characterAnimations.rule(Predicate.MovingRight)
-    )
-    characterAnimations.loopFrames(
-    PlayerSprite,
-    assets.animation`Hero_walking_down`,
-    animation_speed,
-    characterAnimations.rule(Predicate.MovingDown)
-    )
-    characterAnimations.loopFrames(
-    PlayerSprite,
-    assets.animation`Hero_walking_up`,
-    animation_speed,
-    characterAnimations.rule(Predicate.MovingUp)
-    )
-    if (EnemySprite) {
+    if (!(isInMenu)) {
+        pause(5000)
+        SpawnEnemy()
+        pause(5000)
+        SpawnEnemy()
+    } else {
+    	
+    }
+})
+forever(function () {
+    if (!(isInMenu)) {
+        PlayerRadius.setPosition(PlayerSprite.x, PlayerSprite.y)
+    } else {
+    	
+    }
+})
+forever(function () {
+    if (!(isInMenu)) {
         characterAnimations.loopFrames(
-        EnemySprite,
-        assets.animation`Enemy_walk_left`,
+        PlayerSprite,
+        assets.animation`Hero_walking_left`,
         animation_speed,
         characterAnimations.rule(Predicate.MovingLeft)
         )
         characterAnimations.loopFrames(
-        EnemySprite,
-        assets.animation`enemy_walk_right`,
+        PlayerSprite,
+        assets.animation`Hero_walking_right`,
         animation_speed,
         characterAnimations.rule(Predicate.MovingRight)
         )
-    }
-})
-forever(function () {
-    pause(5000)
-    SpawnEnemy()
-    pause(5000)
-    SpawnEnemy()
-})
-forever(function () {
-    PlayerRadius.setPosition(PlayerSprite.x, PlayerSprite.y)
-})
-game.onUpdateInterval(500, function () {
-    if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingLeft))) {
-        enemyDirectionFacingRIght = false
-    } else if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingRight))) {
-        enemyDirectionFacingRIght = true
-    }
-})
-game.onUpdateInterval(500, function () {
-    if (stamina_status_bar.value < 100 && !(controller.B.isPressed())) {
-        isSprinting = false
-        stamina_status_bar.value += 10
-    }
-    if (stamina_status_bar.value > 0 && controller.B.isPressed()) {
-        attemptSprint()
+        characterAnimations.loopFrames(
+        PlayerSprite,
+        assets.animation`Hero_walking_down`,
+        animation_speed,
+        characterAnimations.rule(Predicate.MovingDown)
+        )
+        characterAnimations.loopFrames(
+        PlayerSprite,
+        assets.animation`Hero_walking_up`,
+        animation_speed,
+        characterAnimations.rule(Predicate.MovingUp)
+        )
+        if (EnemySprite) {
+            characterAnimations.loopFrames(
+            EnemySprite,
+            assets.animation`Enemy_walk_left`,
+            animation_speed,
+            characterAnimations.rule(Predicate.MovingLeft)
+            )
+            characterAnimations.loopFrames(
+            EnemySprite,
+            assets.animation`enemy_walk_right`,
+            animation_speed,
+            characterAnimations.rule(Predicate.MovingRight)
+            )
+        }
     } else {
-        animation_speed = 100
-        Player_VX_X = 50
-        player_Vx_Y = 50
-        controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
+    	
+    }
+})
+game.onUpdateInterval(500, function () {
+    if (!(isInMenu)) {
+        if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingLeft))) {
+            enemyDirectionFacingRIght = false
+        } else if (characterAnimations.matchesRule(EnemySprite, characterAnimations.rule(Predicate.MovingRight))) {
+            enemyDirectionFacingRIght = true
+        }
+    } else {
+    	
+    }
+})
+game.onUpdateInterval(500, function () {
+    if (!(isInMenu)) {
+        if (stamina_status_bar.value < 100 && !(controller.B.isPressed())) {
+            isSprinting = false
+            stamina_status_bar.value += 10
+        }
+        if (stamina_status_bar.value > 0 && controller.B.isPressed()) {
+            attemptSprint()
+        } else {
+            animation_speed = 100
+            Player_VX_X = 50
+            player_Vx_Y = 50
+            controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
+        }
+    } else {
+    	
     }
 })
