@@ -1,4 +1,3 @@
-// TODO: Fix settings where sound and hitbox are rendered the same. Add levels, and exit ablity
 namespace SpriteKind {
     export const enemyHitbox = SpriteKind.create()
     export const playerhitbox = SpriteKind.create()
@@ -60,6 +59,9 @@ controller.A.onEvent(ControllerButtonEvent.Pressed, function () {
     	
     }
 })
+function settingsMenuUpdate () {
+	
+}
 // Called automatically by the timer after an invincibility duration is complete.
 function attemptSprint () {
     controller.moveSprite(PlayerSprite, Player_VX_X, player_Vx_Y)
@@ -73,11 +75,11 @@ function attemptSprint () {
 controller.left.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = false
 })
-function createSettingsMenu (SettingsImage: Image) {
+function createSettingsMenu (HitboxesImage: Image, SoundImage: Image) {
     Menu.close()
     Settings_Menu = miniMenu.createMenu(
-    miniMenu.createMenuItem("Hitboxes Visible", SettingsImage),
-    miniMenu.createMenuItem("Sound", SettingsImage)
+    miniMenu.createMenuItem("Hitboxes Visible", HitboxesImage),
+    miniMenu.createMenuItem("Sound", SoundImage)
     )
     Settings_Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Width, 100)
     Settings_Menu.setMenuStyleProperty(miniMenu.MenuStyleProperty.Height, 50)
@@ -103,6 +105,7 @@ function createSettingsMenu (SettingsImage: Image) {
     Settings_Menu.onButtonPressed(controller.left, function (selection, selectedIndex) {
         Settings_Menu.close()
         initMenu()
+        inSettingsMenu = false
     })
 }
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
@@ -279,26 +282,51 @@ function initMenu () {
     Menu.left = 1
     Menu.onButtonPressed(controller.A, function (selection, selectedIndex) {
         if (selectedIndex == 4) {
-            createSettingsMenu(assets.image`Tick`)
+            inSettingsMenu = true
+            if (hitboxesVisible && musicAllowed) {
+                createSettingsMenu(assets.image`Tick`, assets.image`Tick`)
+            } else if (hitboxesVisible && !(musicAllowed)) {
+                createSettingsMenu(assets.image`Tick`, assets.image`Cross`)
+            } else if (musicAllowed && !(hitboxesVisible)) {
+                createSettingsMenu(assets.image`Cross`, assets.image`Tick`)
+            } else {
+                createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
+            }
             Settings_Menu.onButtonPressed(controller.A, function (selection, selectedIndex) {
                 if (selectedIndex == 0) {
                     Settings_Menu.close()
                     if (hitboxesVisible) {
                         hitboxesVisible = false
-                        createSettingsMenu(assets.image`Cross`)
+                        if (musicAllowed) {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Tick`)
+                        } else {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
+                        }
                     } else if (!(hitboxesVisible)) {
                         hitboxesVisible = true
-                        createSettingsMenu(assets.image`Tick`)
+                        if (musicAllowed) {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Tick`)
+                        } else {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
+                        }
                     }
                 }
                 if (selectedIndex == 1) {
                     Settings_Menu.close()
                     if (musicAllowed) {
                         musicAllowed = false
-                        createSettingsMenu(assets.image`Cross`)
-                    } else if (!(hitboxesVisible)) {
+                        if (hitboxesVisible) {
+                            createSettingsMenu(assets.image`Tick`, assets.image`Cross`)
+                        } else {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
+                        }
+                    } else if (!(musicAllowed)) {
                         musicAllowed = true
-                        createSettingsMenu(assets.image`Tick`)
+                        if (hitboxesVisible) {
+                            createSettingsMenu(assets.image`Tick`, assets.image`Cross`)
+                        } else {
+                            createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
+                        }
                     }
                 }
             })
@@ -580,10 +608,12 @@ let PlayerSprite: Sprite = null
 let EnemySprite: Sprite = null
 let bar: StatusBarSprite = null
 let isInMenu = false
+let inSettingsMenu = false
 let musicAllowed = false
 let hitboxesVisible = false
 hitboxesVisible = true
 musicAllowed = true
+inSettingsMenu = false
 init_Variables()
 if (isInMenu) {
     if (musicAllowed) {
@@ -597,16 +627,6 @@ if (isInMenu) {
 }
 game.onUpdateInterval(5000, function () {
     console.log(hitboxesVisible)
-})
-forever(function () {
-    if (!(isInMenu)) {
-        pause(5000)
-        SpawnEnemy()
-        pause(5000)
-        SpawnEnemy()
-    } else {
-    	
-    }
 })
 forever(function () {
     if (!(isInMenu)) {
@@ -655,6 +675,16 @@ forever(function () {
             characterAnimations.rule(Predicate.MovingRight)
             )
         }
+    } else {
+    	
+    }
+})
+forever(function () {
+    if (!(isInMenu)) {
+        pause(5000)
+        SpawnEnemy()
+        pause(5000)
+        SpawnEnemy()
     } else {
     	
     }
