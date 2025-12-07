@@ -27,7 +27,10 @@ function DashY (ButtonPressed: boolean, Direction: number) {
         prevSpeed = PlayerSprite.vy
         controller.moveSprite(PlayerSprite, 0, 0)
         directionY = Direction
-        PlayerSprite.setVelocity(0, 50)
+        PlayerSprite.setVelocity(0, directionY * 800)
+        if (musicAllowed) {
+            music.play(music.createSoundEffect(WaveShape.Square, 1557, 1072, 255, 0, 300, SoundExpressionEffect.Tremolo, InterpolationCurve.Logarithmic), music.PlaybackMode.UntilDone)
+        }
         for (let index = 0; index < 4; index++) {
             timer.background(function () {
                 PlayerSprite.startEffect(effects.fire, 200)
@@ -128,20 +131,25 @@ function createSettingsMenu (HitboxesImage: Image, SoundImage: Image) {
             Settings_Menu.close()
             if (hitboxesVisible && musicAllowed) {
                 musicAllowed = false
+                music.stopAllSounds()
                 createSettingsMenu(assets.image`Tick`, assets.image`Cross`)
             } else if (!(hitboxesVisible) && musicAllowed) {
                 musicAllowed = false
+                music.stopAllSounds()
                 createSettingsMenu(assets.image`Cross`, assets.image`Cross`)
             } else if (!(hitboxesVisible) && !(musicAllowed)) {
                 musicAllowed = true
                 createSettingsMenu(assets.image`Cross`, assets.image`Tick`)
+                music.play(music.createSong(assets.song`MenuSong`), music.PlaybackMode.LoopingInBackground)
             } else if (hitboxesVisible && !(musicAllowed)) {
                 musicAllowed = true
+                music.play(music.createSong(assets.song`MenuSong0`), music.PlaybackMode.LoopingInBackground)
                 createSettingsMenu(assets.image`Tick`, assets.image`Tick`)
             }
         }
     })
 }
+// *** IMPORTANT: REMOVE YOUR ORIGINAL sprites.onOverlap BLOCK ***
 sprites.onOverlap(SpriteKind.Enemy, SpriteKind.Projectile, function (sprite, otherSprite) {
     if (!(isInMenu)) {
         if (isFacingRight) {
@@ -162,6 +170,11 @@ sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerRadius, function (sprite, o
 })
 statusbars.onZero(StatusBarKind.EnemyHealth, function (status) {
     sprites.destroy(status.spriteAttachedTo(), effects.halo, 1000)
+    timer.background(function () {
+        if (musicAllowed) {
+            music.play(music.createSoundEffect(WaveShape.Noise, 1854, 600, 255, 66, 550, SoundExpressionEffect.None, InterpolationCurve.Linear), music.PlaybackMode.UntilDone)
+        }
+    })
 })
 function attack (isfacingright: boolean) {
     if (isAllowedToAttack) {
@@ -223,6 +236,9 @@ function attack (isfacingright: boolean) {
 statusbars.onZero(StatusBarKind.Health, function (status) {
     sprites.destroy(status.spriteAttachedTo(), effects.warmRadial, 1000)
     sprites.destroy(PlayerRadius)
+    if (musicAllowed) {
+        music.play(music.createSong(assets.song`GameOver`), music.PlaybackMode.UntilDone)
+    }
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
     isFacingRight = true
@@ -233,6 +249,9 @@ function decreasePlayerHealth (decreaseAmount: number) {
 }
 sprites.onOverlap(SpriteKind.Player, SpriteKind.enemyHitbox, function (sprite, otherSprite) {
     decreasePlayerHealth(-10)
+    if (musicAllowed) {
+        music.play(music.createSoundEffect(WaveShape.Square, 2450, 1135, 255, 60, 200, SoundExpressionEffect.Tremolo, InterpolationCurve.Logarithmic), music.PlaybackMode.UntilDone)
+    }
     if (enemyDirectionFacingRIght) {
         sprite.setVelocity(200, 0)
         pause(200)
@@ -253,6 +272,9 @@ function Dash (ButtonPressed2: boolean, Direction2: number) {
         controller.moveSprite(PlayerSprite, 0, 0)
         directionX = Direction2
         PlayerSprite.setVelocity(directionX * 800, 0)
+        if (musicAllowed) {
+            music.play(music.createSoundEffect(WaveShape.Square, 1557, 1072, 255, 0, 300, SoundExpressionEffect.Tremolo, InterpolationCurve.Logarithmic), music.PlaybackMode.UntilDone)
+        }
         for (let index = 0; index < 4; index++) {
             timer.background(function () {
                 PlayerSprite.startEffect(effects.fire, 200)
@@ -338,6 +360,10 @@ function initMenu () {
             init_Variables()
             // Game is now active
             isInMenu = false
+        }
+        if (selectedIndex == 5) {
+            Menu.close()
+            music.stopAllSounds()
         }
     })
 }
@@ -576,15 +602,22 @@ sprites.onOverlap(SpriteKind.Enemy, SpriteKind.playerhitbox, function (sprite, o
     IsAllowedEnemytoAttack = false
     decreaseEnemyHealth(-10, sprite)
     if (isFacingRight) {
+        if (musicAllowed) {
+            music.play(music.createSoundEffect(WaveShape.Square, 200, 1, 255, 86, 100, SoundExpressionEffect.None, InterpolationCurve.Curve), music.PlaybackMode.UntilDone)
+        }
         sprite.setVelocity(500, 0)
         pause(100)
         sprite.vx = 0
     } else {
+        if (musicAllowed) {
+            music.play(music.createSoundEffect(WaveShape.Square, 200, 1, 255, 86, 100, SoundExpressionEffect.None, InterpolationCurve.Curve), music.PlaybackMode.UntilDone)
+        }
         sprite.setVelocity(-500, 0)
         pause(100)
         sprite.vx = 0
     }
 })
+let enemies: Sprite[] = []
 let _EnemyHealth: StatusBarSprite = null
 let invincibilitySources = 0
 let EnemyAttacking = false
@@ -615,6 +648,11 @@ let isInMenu = false
 let inSettingsMenu = false
 let musicAllowed = false
 let hitboxesVisible = false
+let enemyangle = 0
+let reversedenemyAngle = 0
+// Assuming your enemy sprite image is 16x16 pixels wide
+let REPEL_DISTANCE = 16
+let PUSH_SPEED = 10
 hitboxesVisible = true
 musicAllowed = true
 inSettingsMenu = false
@@ -622,6 +660,8 @@ init_Variables()
 if (isInMenu) {
     if (musicAllowed) {
         music.play(music.createSong(assets.song`MenuSong`), music.PlaybackMode.LoopingInBackground)
+    } else {
+        music.stopAllSounds()
     }
     initMenu()
 } else {
@@ -629,6 +669,38 @@ if (isInMenu) {
     createPlayerRadius()
     music.stopAllSounds()
 }
+game.onUpdate(function () {
+    enemies = sprites.allOfKind(SpriteKind.Enemy)
+    for (let i = 0; i <= enemies.length - 1; i++) {
+        for (let j = i + 1; j < enemies.length; j++) {
+            let enemyA = enemies[i]
+            let enemyB = enemies[j]
+
+            let distance = spriteutils.distanceBetween(enemyA, enemyB)
+
+            if (distance < REPEL_DISTANCE && distance > 0) {
+                let angleAtoB = spriteutils.angleFrom(enemyA, enemyB)
+                let overlap = REPEL_DISTANCE - distance
+
+                // Position Correction
+                let angleA_rad = (angleAtoB + 180) * (Math.PI / 180)
+                let angleB_rad = angleAtoB * (Math.PI / 180)
+
+                // Move A instantly by half the overlap to push it out
+                enemyA.x += overlap / 2 * Math.cos(angleA_rad)
+                enemyA.y += overlap / 2 * Math.sin(angleA_rad)
+
+                // Move B instantly by the other half
+                enemyB.x += overlap / 2 * Math.cos(angleB_rad)
+                enemyB.y += overlap / 2 * Math.sin(angleB_rad)
+
+                // Optional: Instant push for momentum
+                spriteutils.setVelocityAtAngle(enemyA, angleAtoB + 180, PUSH_SPEED)
+                spriteutils.setVelocityAtAngle(enemyB, angleAtoB, PUSH_SPEED)
+            }
+        }
+    }
+})
 game.onUpdateInterval(5000, function () {
     console.log(hitboxesVisible)
 })
@@ -718,4 +790,7 @@ game.onUpdateInterval(500, function () {
     } else {
     	
     }
+})
+game.onUpdateInterval(500, function () {
+	
 })
