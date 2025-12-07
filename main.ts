@@ -237,7 +237,7 @@ statusbars.onZero(StatusBarKind.Health, function (status) {
     sprites.destroy(status.spriteAttachedTo(), effects.warmRadial, 1000)
     sprites.destroy(PlayerRadius)
     if (musicAllowed) {
-        music.play(music.createSong(assets.song`GameOver`), music.PlaybackMode.UntilDone)
+        music.play(music.createSoundEffect(WaveShape.Noise, 4314, 1170, 255, 0, 1000, SoundExpressionEffect.None, InterpolationCurve.Logarithmic), music.PlaybackMode.UntilDone)
     }
 })
 controller.right.onEvent(ControllerButtonEvent.Pressed, function () {
