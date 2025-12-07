@@ -350,6 +350,7 @@ function initMenu () {
             }
         }
         if (selectedIndex == 0) {
+            controller.vibrate(1000)
             Menu.close()
             // ✅ CRITICAL FIX: Add the setup functions here!
             SetUp(false)
